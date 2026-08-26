@@ -1,3 +1,5 @@
 /greeter
 app/greeter
 .DS_Store
+*gpg
+greeter*.tgz*

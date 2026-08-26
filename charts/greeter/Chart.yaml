@@ -1,0 +1,13 @@
+apiVersion: v2
+
+name: greeter
+
+description: Helm chart for the what3words DevOps technical exercise
+
+type: application
+
+version: 0.1.0
+
+appVersion: "dev"
+
+kubeVersion: ">=1.29.0-0"
