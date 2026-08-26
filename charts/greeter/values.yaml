@@ -25,13 +25,9 @@ envoyProxy:
   enabled: true
 
   annotations: {}
+  hostnames: []
   parentRefs:
     name: what3words-gateway
-  hosts:
-    - host: ""
-      paths:
-        - path: /
-          pathType: Prefix
 
 resources:
   requests:

@@ -10,7 +10,8 @@ spec:
   parentRefs:
     - name: {{ .Values.envoyProxy.parentRefs.name }}
       namespace: {{ .Values.envoyProxy.parentRefs.namespace | default "envoy-gateway-system" }}
-
+  hostnames:
+    {{- toYaml .Values.gateway.hostnames | nindent 2 }}
   rules:
     - matches:
         - path:
