@@ -1,0 +1,79 @@
+replicaCount: 2
+
+image:
+  repository: greeter
+  tag: exercise
+  pullPolicy: IfNotPresent
+
+nameOverride: ""
+fullnameOverride: ""
+
+application:
+  greetingName: "what3words"
+  version: "exercise"
+  port: 8080
+
+  warmupSeconds: 30
+  shutdownDelaySeconds: 10
+  drainTimeoutSeconds: 20
+
+service:
+  type: ClusterIP
+  port: 80
+
+envoyProxy:
+  enabled: true
+
+  annotations: {}
+  parentRefs:
+    name: what3words-gateway
+  hosts:
+    - host: ""
+      paths:
+        - path: /
+          pathType: Prefix
+
+resources:
+  requests:
+    cpu: 50m
+    memory: 32Mi
+
+  limits:
+    cpu: 250m
+    memory: 128Mi
+
+probes:
+  liveness:
+    initialDelaySeconds: 5
+    periodSeconds: 10
+    timeoutSeconds: 2
+    failureThreshold: 3
+
+  readiness:
+    periodSeconds: 5
+    timeoutSeconds: 2
+    failureThreshold: 2
+
+terminationGracePeriodSeconds: 40
+
+podDisruptionBudget:
+  enabled: true
+  minAvailable: 1
+
+topologySpreadConstraints:
+  enabled: true
+  maxSkew: 1
+  topologyKey: kubernetes.io/hostname
+  whenUnsatisfiable: DoNotSchedule
+
+nodeSelector: {}
+
+tolerations: []
+
+affinity:
+  nodeAffinity:
+    requiredDuringSchedulingIgnoredDuringExecution:
+      nodeSelectorTerms:
+        - matchExpressions:
+            - key: node-role.kubernetes.io/control-plane
+              operator: DoesNotExist

@@ -1,0 +1,102 @@
+apiVersion: apps/v1
+kind: Deployment
+
+metadata:
+  name: {{ include "greeter.fullname" . }}
+
+  labels:
+    {{- include "greeter.labels" . | nindent 4 }}
+
+spec:
+  replicas: {{ .Values.replicaCount }}
+
+  strategy:
+    type: RollingUpdate
+
+    rollingUpdate:
+      maxUnavailable: 0
+      maxSurge: 1
+
+  selector:
+    matchLabels:
+      {{- include "greeter.selectorLabels" . | nindent 6 }}
+
+  template:
+    metadata:
+      labels:
+        {{- include "greeter.selectorLabels" . | nindent 8 }}
+
+    spec:
+      terminationGracePeriodSeconds: {{ .Values.terminationGracePeriodSeconds }}
+
+      {{- if .Values.topologySpreadConstraints.enabled }}
+      topologySpreadConstraints:
+        - maxSkew: {{ .Values.topologySpreadConstraints.maxSkew }}
+
+          topologyKey: {{ .Values.topologySpreadConstraints.topologyKey }}
+
+          whenUnsatisfiable: {{ .Values.topologySpreadConstraints.whenUnsatisfiable }}
+
+          labelSelector:
+            matchLabels:
+              {{- include "greeter.selectorLabels" . | nindent 14 }}
+      {{- end }}
+
+
+      {{- with .Values.affinity }}
+      affinity:
+        {{- toYaml . | nindent 8 }}
+      {{- end }}
+
+      containers:
+        - name: greeter
+
+          image: "{{ .Values.image.repository }}:{{ .Values.image.tag }}"
+
+          imagePullPolicy: {{ .Values.image.pullPolicy }}
+
+          ports:
+            - name: http
+              containerPort: {{ .Values.application.port }}
+              protocol: TCP
+
+          env:
+            - name: GREETING_NAME
+              value: {{ required "application.greetingName is required" .Values.application.greetingName | quote }}
+
+            - name: PORT
+              value: {{ .Values.application.port | quote }}
+
+            - name: VERSION
+              value: {{ .Values.application.version | quote }}
+
+            - name: WARMUP_SECONDS
+              value: {{ .Values.application.warmupSeconds | quote }}
+
+            - name: SHUTDOWN_DELAY_SECONDS
+              value: {{ .Values.application.shutdownDelaySeconds | quote }}
+
+            - name: DRAIN_TIMEOUT_SECONDS
+              value: {{ .Values.application.drainTimeoutSeconds | quote }}
+
+          livenessProbe:
+            httpGet:
+              path: /healthz
+              port: http
+
+            initialDelaySeconds: {{ .Values.probes.liveness.initialDelaySeconds }}
+            periodSeconds: {{ .Values.probes.liveness.periodSeconds }}
+            timeoutSeconds: {{ .Values.probes.liveness.timeoutSeconds }}
+            failureThreshold: {{ .Values.probes.liveness.failureThreshold }}
+
+          readinessProbe:
+            httpGet:
+              path: /readyz
+              port: http
+
+            periodSeconds: {{ .Values.probes.readiness.periodSeconds }}
+            timeoutSeconds: {{ .Values.probes.readiness.timeoutSeconds }}
+            failureThreshold: {{ .Values.probes.readiness.failureThreshold }}
+
+          resources:
+            {{- toYaml .Values.resources | nindent 12 }}
