@@ -3,3 +3,5 @@ app/greeter
 .DS_Store
 *gpg
 greeter*.tgz*
+.terraform
+*.tfstate*

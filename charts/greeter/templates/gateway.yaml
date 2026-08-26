@@ -1,4 +1,4 @@
-{{- if .Values.envoyProxy.enabled }}
+{{- if .Values.gateway.enabled }}
 
 apiVersion: gateway.networking.k8s.io/v1
 kind: HTTPRoute
@@ -8,9 +8,10 @@ metadata:
 
 spec:
   parentRefs:
-    - name: {{ .Values.envoyProxy.parentRefs.name }}
-      namespace: {{ .Values.envoyProxy.parentRefs.namespace | default "envoy-gateway-system" }}
-
+    - name: {{ .Values.gateway.parentRefs.name }}
+      namespace: {{ .Values.gateway.parentRefs.namespace | default "envoy-gateway-system" }}
+  hostnames:
+    {{- toYaml .Values.gateway.hostnames | nindent 4 }}
   rules:
     - matches:
         - path:
