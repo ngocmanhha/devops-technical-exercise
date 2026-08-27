@@ -1,0 +1,47 @@
+apiVersion: argoproj.io/v1alpha1
+kind: Application
+
+metadata:
+  name: greeter-prod
+  namespace: argocd
+
+spec:
+  project: default
+
+  source:
+    repoURL: https://github.com/ngocmanhha/devops-technical-exercise.git
+    targetRevision: solution-ext
+    path: charts/greeter
+
+    helm:
+      releaseName: greeter
+
+      valuesObject:
+        replicaCount: 2
+
+        application:
+          greetingName: "what3words Production"
+          version: "prod"
+
+        gateway:
+          hostnames:
+            - prod.greeter.local
+
+        monitoring:
+          enabled: true
+          serviceMonitor:
+            enabled: true
+          prometheusRule:
+            enabled: true
+
+  destination:
+    server: https://kubernetes.default.svc
+    namespace: greeter-prod
+
+  syncPolicy:
+    automated:
+      prune: true
+      selfHeal: true
+
+    syncOptions:
+      - CreateNamespace=true

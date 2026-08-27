@@ -1,0 +1,40 @@
+apiVersion: argoproj.io/v1alpha1
+kind: Application
+
+metadata:
+  name: greeter-dev
+  namespace: argocd
+
+spec:
+  project: default
+
+  source:
+    repoURL: https://github.com/ngocmanhha/devops-technical-exercise.git
+    targetRevision: solution-ext
+    path: charts/greeter
+
+    helm:
+      releaseName: greeter
+
+      valuesObject:
+        replicaCount: 1
+
+        application:
+          greetingName: "what3words Dev"
+          version: "dev"
+
+        gateway:
+          hostnames:
+            - dev.greeter.local
+
+  destination:
+    server: https://kubernetes.default.svc
+    namespace: greeter-dev
+
+  syncPolicy:
+    automated:
+      prune: true
+      selfHeal: true
+
+    syncOptions:
+      - CreateNamespace=true
