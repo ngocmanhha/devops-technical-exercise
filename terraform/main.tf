@@ -14,4 +14,6 @@ module "greeter" {
   hostnames     = each.value.hostnames
 
   resources = each.value.resources
+
+  monitoring = lookup(each.value, "monitoring", {})
 }

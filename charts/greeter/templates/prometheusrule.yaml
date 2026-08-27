@@ -1,0 +1,31 @@
+{{- if and .Values.monitoring.enabled .Values.monitoring.prometheusRule.enabled }}
+apiVersion: monitoring.coreos.com/v1
+kind: PrometheusRule
+
+metadata:
+  name: {{ include "greeter.fullname" . }}
+
+  labels:
+    {{- include "greeter.labels" . | nindent 4 }}
+
+spec:
+  groups:
+    - name: greeter.rules
+      rules:
+        {{- range .Values.monitoring.prometheusRule.rules }}
+        - alert: {{ required "monitoring.prometheusRule.rules[].alertName is required" .alertName }}
+          expr: |
+            {{- .expr | nindent 12 }}
+          {{- with .for }}
+          for: {{ . }}
+          {{- end }}
+          {{- with .labels }}
+          labels:
+            {{- toYaml . | nindent 12 }}
+          {{- end }}
+          {{- with .annotations }}
+          annotations:
+            {{- toYaml . | nindent 12 }}
+          {{- end }}
+        {{- end }}
+{{- end }}

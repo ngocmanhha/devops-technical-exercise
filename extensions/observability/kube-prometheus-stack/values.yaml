@@ -1,0 +1,21 @@
+grafana:
+  enabled: false
+
+alertmanager:
+  enabled: false
+
+kubeStateMetrics:
+  enabled: false
+
+nodeExporter:
+  enabled: false
+
+prometheus:
+  prometheusSpec:
+    retention: 2h
+
+    serviceMonitorSelectorNilUsesHelmValues: false
+    ruleSelectorNilUsesHelmValues: false
+
+    serviceMonitorNamespaceSelector: {}
+    ruleNamespaceSelector: {}

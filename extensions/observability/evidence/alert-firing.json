@@ -1,0 +1,13 @@
+{
+  "labels": {
+    "alertname": "GreeterHigh5xxErrorRate",
+    "severity": "critical"
+  },
+  "annotations": {
+    "description": "More than 10% of Greeter requests have returned HTTP 5xx responses for 2 minutes.",
+    "summary": "Greeter has a high HTTP 5xx error rate"
+  },
+  "state": "firing",
+  "activeAt": "2026-08-27T14:07:45.181863788Z",
+  "value": "9.19642881055478e-01"
+}

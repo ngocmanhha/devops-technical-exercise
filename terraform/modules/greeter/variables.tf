@@ -59,3 +59,36 @@ variable "hostnames" {
   type        = list(string)
   default     = []
 }
+
+variable "monitoring" {
+  type = object({
+    enabled = optional(bool, false)
+    serviceMonitor = object({
+      enabled       = optional(bool, false)
+      port          = optional(string, "")
+      path          = optional(string, "")
+      interval      = optional(string, "")
+      scrapeTimeout = optional(string, "")
+    })
+    prometheusRule = object({
+      enabled = optional(bool, false)
+      rules = optional(list(object({
+        alertName   = optional(string, null)
+        expr        = optional(string, null)
+        for         = optional(string, null)
+        labels      = optional(map(any), {})
+        annotations = optional(map(any), {})
+      })), [])
+    })
+  })
+  default = {
+    enabled = false
+    serviceMonitor = {
+      enabled = false
+    }
+    prometheusRule = {
+      enabled = false
+    }
+  }
+  description = "Enable and configure monitoring for greeter service"
+}

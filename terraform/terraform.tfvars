@@ -41,5 +41,34 @@ environments = {
         memory = "128Mi"
       }
     }
+
+    monitoring = {
+      enabled = true
+      serviceMonitor = {
+        enabled = true
+      }
+      prometheusRule = {
+        enabled = true
+        rules = [
+          {
+            alertName = "GreeterHigh5xxErrorRate"
+            expr      = <<EOF
+                    sum(rate(greeter_http_requests_total{status=~"5.."}[1m]))
+                    /
+                    sum(rate(greeter_http_requests_total[1m]))
+                    > 0.10
+                EOF
+            for       = "2m"
+            labels = {
+              severity = "critical"
+            }
+            annotations = {
+              summary     = "Greeter has a high HTTP 5xx error rate"
+              description = "More than 10% of Greeter requests have returned HTTP 5xx responses for 2 minutes."
+            }
+          }
+        ]
+      }
+    }
   }
 }
