@@ -1,0 +1,6 @@
+Requests:        624
+Successful:      624
+Failed:          0
+Success rate:    100.00%
+Average latency: 0.0088s
+Max latency:     0.0644s

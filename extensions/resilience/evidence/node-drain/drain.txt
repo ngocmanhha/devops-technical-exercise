@@ -1,0 +1,17 @@
+node/k3d-what3words-exercise-agent-0 cordoned
+evicting pod greeter-prod/greeter-greeter-5f4b5484cd-cmll4
+evicting pod kube-system/local-path-provisioner-5d9d9885bc-hkq6h
+evicting pod greeter-prod/greeter-greeter-5f4b5484cd-h75q9
+evicting pod monitoring/kps-kube-prometheus-stack-operator-686fdd5789-5txqz
+pod/kps-kube-prometheus-stack-operator-686fdd5789-5txqz evicted
+pod/local-path-provisioner-5d9d9885bc-hkq6h evicted
+evicting pod greeter-prod/greeter-greeter-5f4b5484cd-cmll4
+evicting pod greeter-prod/greeter-greeter-5f4b5484cd-cmll4
+pod/greeter-greeter-5f4b5484cd-h75q9 evicted
+evicting pod greeter-prod/greeter-greeter-5f4b5484cd-cmll4
+evicting pod greeter-prod/greeter-greeter-5f4b5484cd-cmll4
+evicting pod greeter-prod/greeter-greeter-5f4b5484cd-cmll4
+evicting pod greeter-prod/greeter-greeter-5f4b5484cd-cmll4
+evicting pod greeter-prod/greeter-greeter-5f4b5484cd-cmll4
+pod/greeter-greeter-5f4b5484cd-cmll4 evicted
+node/k3d-what3words-exercise-agent-0 drained
