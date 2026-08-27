@@ -1,0 +1,291 @@
+name: CI
+
+on:
+  push:
+    branches:
+    #   - main
+    #   - solution
+      - solution-ext
+
+  pull_request:
+    branches:
+      - main
+
+permissions:
+  contents: read
+
+jobs:
+  test:
+    name: Go Tests
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Set up Go
+        uses: actions/setup-go@v5
+        with:
+          go-version-file: app/go.mod
+          cache-dependency-path: app/go.sum
+
+      - name: Run tests with coverage
+        working-directory: app
+        env:
+          CGO_ENABLED: "0"
+        run: |
+          go test \
+            -coverprofile=coverage.out \
+            ./...
+
+      - name: Show coverage
+        working-directory: app
+        run: |
+          go tool cover \
+            -func=coverage.out
+
+      - name: Upload coverage
+        uses: actions/upload-artifact@v4
+        with:
+          name: go-coverage
+          path: app/coverage.out
+          if-no-files-found: error
+
+  sonar:
+    name: Mock Sonar Scan
+    runs-on: ubuntu-latest
+    needs:
+      - test
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Set up Go
+        uses: actions/setup-go@v5
+        with:
+          go-version-file: app/go.mod
+          cache-dependency-path: app/go.sum
+
+      - name: Download coverage
+        uses: actions/download-artifact@v4
+        with:
+          name: go-coverage
+          path: app
+
+      - name: Run mock Sonar analysis
+        working-directory: app
+        run: |
+          set -euo pipefail
+
+          test -f coverage.out
+
+          COVERAGE="$(
+          go tool cover \
+              -func=coverage.out \
+              | awk '/total:/ {print $3}'
+          )"
+
+          echo "========================================"
+          echo "Mock Sonar Analysis"
+          echo "========================================"
+          echo "Project:            what3words-exercise"
+          echo "Coverage report:    app/coverage.out"
+          echo "Code coverage:      ${COVERAGE}"
+          echo "Bugs:               0"
+          echo "Vulnerabilities:    0"
+          echo "Security hotspots:  0"
+          echo "Code smells:        0"
+          echo "Quality Gate:       PASSED"
+          echo "========================================"
+          echo
+          echo "NOTE:"
+          echo "This is a mocked Sonar stage."
+          echo "A production pipeline would invoke SonarQube"
+          echo "or SonarCloud and enforce its real quality gate."
+  docker:
+    name: Docker Build
+    runs-on: ubuntu-latest
+    needs:
+      - test
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Set up Docker Buildx
+        uses: docker/setup-buildx-action@v3
+
+      - name: Build image
+        uses: docker/build-push-action@v6
+        with:
+          context: .
+          push: false
+          platforms: linux/amd64
+          tags: greeter:ci
+          cache-from: type=gha
+          cache-to: type=gha,mode=max
+
+  helm:
+    name: Helm Validation
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Set up Helm
+        uses: azure/setup-helm@v4
+
+      - name: Helm lint
+        run: |
+          helm lint charts/greeter
+
+      - name: Render dev chart
+        run: |
+          helm template \
+            greeter \
+            charts/greeter \
+            --namespace greeter-dev \
+            --set gateway.hostnames[0]=dev.greeter.local \
+            > /tmp/greeter-dev.yaml
+
+      - name: Render prod chart
+        run: |
+          helm template \
+            greeter \
+            charts/greeter \
+            --namespace greeter-prod \
+            --set monitoring.enabled=true \
+            --set monitoring.serviceMonitor.enabled=true \
+            --set monitoring.prometheusRule.enabled=true \
+            --set gateway.hostnames[0]=prod.greeter.local \
+            > /tmp/greeter-prod.yaml
+
+      - name: Verify rendered manifests exist
+        run: |
+          test -s /tmp/greeter-dev.yaml
+          test -s /tmp/greeter-prod.yaml
+
+          echo "Dev manifest resources:"
+          grep '^kind:' /tmp/greeter-dev.yaml || true
+
+          echo
+          echo "Prod manifest resources:"
+          grep '^kind:' /tmp/greeter-prod.yaml || true
+
+      - name: Verify monitoring resources render
+        run: |
+          grep -q 'kind: ServiceMonitor' /tmp/greeter-prod.yaml
+          grep -q 'kind: PrometheusRule' /tmp/greeter-prod.yaml
+
+          echo "ServiceMonitor rendered successfully."
+          echo "PrometheusRule rendered successfully."
+
+      - name: Verify Gateway API route renders
+        run: |
+          grep -q 'kind: HTTPRoute' /tmp/greeter-dev.yaml
+          grep -q 'kind: HTTPRoute' /tmp/greeter-prod.yaml
+
+          grep -q 'dev.greeter.local' /tmp/greeter-dev.yaml
+          grep -q 'prod.greeter.local' /tmp/greeter-prod.yaml
+
+          echo "Dev and prod HTTPRoutes rendered successfully."
+
+  terraform:
+    name: Terraform Validation
+    runs-on: ubuntu-latest
+
+    defaults:
+      run:
+        working-directory: terraform
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Set up Terraform
+        uses: hashicorp/setup-terraform@v3
+
+      - name: Terraform version
+        run: terraform version
+
+      - name: Check formatting
+        run: |
+          terraform fmt \
+            -recursive \
+            -check
+
+      - name: Initialize
+        run: |
+          terraform init \
+            -backend=false
+
+      - name: Validate
+        run: terraform validate
+
+  shellcheck:
+    name: ShellCheck
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Run ShellCheck
+        run: |
+          find . \
+            -type f \
+            -name '*.sh' \
+            -not -path './.git/*' \
+            -print0 \
+            | xargs -0 -r shellcheck
+
+  ci-success:
+    name: CI Success
+    runs-on: ubuntu-latest
+
+    needs:
+      - test
+      - sonar
+      - docker
+      - helm
+      - terraform
+      - shellcheck
+
+    if: always()
+
+    steps:
+      - name: Check required jobs
+        env:
+          TEST_RESULT: ${{ needs.test.result }}
+          SONAR_RESULT: ${{ needs.sonar.result }}
+          DOCKER_RESULT: ${{ needs.docker.result }}
+          HELM_RESULT: ${{ needs.helm.result }}
+          TERRAFORM_RESULT: ${{ needs.terraform.result }}
+          SHELLCHECK_RESULT: ${{ needs.shellcheck.result }}
+        run: |
+          set -euo pipefail
+
+          echo "Go Tests:             ${TEST_RESULT}"
+          echo "Mock Sonar Scan:      ${SONAR_RESULT}"
+          echo "Docker Build:         ${DOCKER_RESULT}"
+          echo "Helm Validation:      ${HELM_RESULT}"
+          echo "Terraform Validation: ${TERRAFORM_RESULT}"
+          echo "ShellCheck:            ${SHELLCHECK_RESULT}"
+
+          for result in \
+            "${TEST_RESULT}" \
+            "${SONAR_RESULT}" \
+            "${DOCKER_RESULT}" \
+            "${HELM_RESULT}" \
+            "${TERRAFORM_RESULT}" \
+            "${SHELLCHECK_RESULT}"
+          do
+            if [[ "${result}" != "success" ]]; then
+              echo "CI failed."
+              exit 1
+            fi
+          done
+
+          echo "All required CI checks passed."

@@ -4,7 +4,6 @@ set -euo pipefail
 
 CLUSTER_NAME="what3words-exercise"
 CONFIG="$(dirname "$0")/cluster.yaml"
-IMAGE="greeter:local"
 
 echo "==> Checking dependencies"
 
