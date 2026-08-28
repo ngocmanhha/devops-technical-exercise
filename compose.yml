@@ -1,0 +1,38 @@
+services:
+  greeter:
+    build:
+      context: .
+      dockerfile: Dockerfile
+
+    image: greeter:exercise
+
+    container_name: greeter
+
+    ports:
+      - "8080:8080"
+
+    environment:
+      GREETING_NAME: ${GREETING_NAME:-Exercise}
+      VERSION: ${VERSION:-exercise}
+      WARMUP_SECONDS: ${WARMUP_SECONDS:-5}
+      SHUTDOWN_DELAY_SECONDS: ${SHUTDOWN_DELAY_SECONDS:-10}
+      DRAIN_TIMEOUT_SECONDS: ${DRAIN_TIMEOUT_SECONDS:-20}
+
+    restart: unless-stopped
+
+    stop_grace_period: 40s
+
+    healthcheck:
+      test:
+        [
+          "CMD",
+          "wget",
+          "--quiet",
+          "--tries=1",
+          "--spider",
+          "http://localhost:8080/healthz"
+        ]
+      interval: 10s
+      timeout: 3s
+      retries: 3
+      start_period: 5s
